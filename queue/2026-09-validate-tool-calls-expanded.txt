@@ -1,0 +1,27 @@
+An agent's tool call is a promise. The model says it's going to call update_record with an id, a status, and a reason. If any of those arguments are wrong, the tool runs anyway. And tools don't fail politely. They create records, delete files, spend money, send messages to people.
+
+Everyone worries about the malicious case: an attacker steers the agent into a bad call. The case that actually happens daily is dumber. The model samples its output token by token, and sometimes the sample doesn't match the schema. A missing field, a string where a number belongs, an enum value that was almost right.
+
+The statistical point matters. A 99% argument-accuracy model sounds reliable until you multiply: an 8-call task chain at 99% per call succeeds only ~92% of the time. Ten calls, 90%. The failure isn't an edge case, it's a probability that compounds with task length.
+
+Tool calling turned every model into a distributed system where the caller is a probability distribution. Two consequences nobody budgets for:
+
+1. Malformed arguments are a certainty, not an anomaly. Yet most frameworks validate best-effort: they coerce, fill defaults, warn instead of reject. Coercion turns a caught error into a wrong write. Filling defaults invents data the tool will act on.
+2. Where you validate decides whether it's a near miss or an incident. Frameworks often validate after the fact, on the response. A mismatch caught post-write is just an outage report with extra steps.
+
+The contract exists already. JSON Schema is the machine-checkable boundary between what a tool declares and what a caller may send. The gap is that almost nobody validates agent output against it before letting the call through.
+
+The five-minute fix:
+
+1. Give every tool a real JSON Schema contract. Not a docstring, a contract: types, required fields, enums, bounds on strings and numbers.
+2. Validate before execution. Reject, don't coerce. On rejection, send the schema and the validation error back to the model, let it retry with the failure visible. That retry loop is cheaper than any incident.
+3. Bound the retry. Cap retries, then escalate to a human. A model retrying its way through a bad schema is a loop, not a recovery.
+4. Log every rejection. A spike in rejection rate means either a degenerate prompt or someone probing your agent. Both are worth knowing about the hour they start.
+
+One more thing: validation protects against the malicious case too. Prompt injection has to produce a tool call to do damage, and a call has to pass the schema. A strict validation layer with side-effect gating is the checkpoint that catches a successful injection before it becomes an action.
+
+The model proposes. The schema disposes.
+
+Full guide: https://www.darinor.com/blog/validate-agent-tool-calls-before-execution
+
+#AIAgents #JSONSchema #SoftwareEngineering

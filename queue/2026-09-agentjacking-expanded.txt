@@ -1,0 +1,34 @@
+Your coding agent reads error logs. An attacker can write them.
+
+In June 2026, Tenet Security published a new attack class it calls agentjacking. One fake error event, injected through a public Sentry DSN, hijacked Claude Code, Cursor, and Codex into running attacker-controlled code on a developer machine. The victim never clicks a link. The attacker never breaches a server. The agent simply reads the error and executes the fix.
+
+That last sentence is the entire attack. And it deserves different treatment from the usual agent scare, because it converts a telemetry pipeline into a remote-code path without a single vulnerability in the traditional sense. The weakness is not in Sentry's parser or the model's weights. It lives in the seam where three trusted components meet, and no vendor owns that seam.
+
+The three components, each trusted on its own:
+
+1. Error telemetry. Sentry DSNs are designed to be public. They ship in client bundles by design, and anyone holding a DSN can submit error events to that project.
+2. The agent loop. A coding agent is built to act on what it observes: read the error, form a hypothesis, run the fix. That loop is the product working as intended.
+3. Shell access. Coding agents hold the shell, read the whole repo, install packages, all under the developer's own identity. That is their job.
+
+Each component is defensible in isolation. The attack composes them: falsified input into a system whose job is to act on input. An error log is treated as context, but for an agent, context is executable intent.
+
+Why your security stack can't see it:
+
+1. Nothing is malformed. The event is a valid error payload. Its payload is persuasive, not corrupt.
+2. No suspicious process. The agent itself runs the command, with the user's credentials, from the user's own terminal.
+3. No perimeter. The malicious input arrives through a third-party telemetry vendor that every team trusts.
+
+The controls that would catch a normal attack all assume two things: hostile input is malformed, and hostile execution comes from somewhere other than your most trusted process. Agentjacking breaks both assumptions.
+
+What actually reduces the risk:
+
+1. Treat error output from external services as untrusted input, not ground truth. It is text that arrived over a network. Filter it like any other untrusted source.
+2. Gate auto-fix behavior. Any pipeline that turns diagnostics directly into shell commands is a remote execution interface whether you named it one or not. Put an approval boundary between the error and the command.
+3. Scope agent execution rights. A hijacked run that can't reach credentials, secrets, or production is a containment exercise. One that can is a breach.
+4. Correlate external events with subsequent commands. Log when incoming event content precedes an executed command. That seam, telemetry in, command out, is your detection point, because no one else owns it.
+
+Coding agents are the most privileged software most companies have ever deployed to a laptop. The security model around them was designed for a world where only users and malware can tell a process to act. Error dashboards just joined that list, and nobody updated the model.
+
+Full breakdown: https://www.darinor.com/blog/agentjacking-fake-sentry-errors-hijack-ai-coding-agents
+
+#AgenticAI #AISecurity #DevTools

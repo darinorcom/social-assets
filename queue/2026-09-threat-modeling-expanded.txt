@@ -1,0 +1,31 @@
+Threat modeling has an adoption problem: the average US breach costs $10.22M, yet only 37% of organizations maintain a formal process. The gap isn't ignorance. Threat modeling earned a reputation for heavyweight workshops, dense documentation, and security-team exclusivity, and engineering organizations voted with their feet.
+
+Agents raise the stakes because the system you're modeling stops being a set of components and becomes a set of components that act on their own. They call tools, read memory, move data, send messages. Every one of those actions is a data flow, and most of them are undocumented. Your DFD shows a database. It does not show the agent that decides, at runtime, which records it feels like touching.
+
+Every practical threat model answers four questions, regardless of framework:
+
+1. What are we building? A data flow diagram or architecture sketch that defines the boundary.
+2. What can go wrong? Threats identified through a structured methodology.
+3. What are we going to do about it? Mitigations and accepted risks.
+4. Did we do a good job? Verification.
+
+Frameworks disagree on ceremony. The questions are stable. Answering them takes a sprint, not a quarter.
+
+The agent surfaces scanners cannot see:
+
+1. Tool calls. Every tool invocation is a trust decision an LLM makes at runtime, from samples. An agent with 30 tools has 30 different ways to be pointed at the wrong object, and static analysis sees none of them because the calls don't exist until the model generates them.
+2. Memory. Agent memory is persistent, attacker-writable state. Memory poisoning doesn't look like an attack. It looks like the system working as designed, except the design now includes attacker-authored ground truth.
+3. MCP servers. Programs you didn't write, running with your agent's permissions, on your network, answering to instructions a model will probably follow. Only ~8.5% of them use OAuth; most run locally on developer machines with no procurement step and no audit log.
+4. The inter-agent seam. Multi-agent setups pass messages that are simultaneously data and instructions for the receiving agent. Every handoff is an injection boundary nobody drew.
+
+The fix is cadence, not ceremony:
+
+1. Model in sprints, at the architecture layer, every time an agent gains a new capability. New tool, new memory source, new server: that's a threat-model trigger, not a feature note.
+2. Start from the side effects. Enumerate what the agent can DO, then draw how each capability can be reached by content the agent will read.
+3. Keep the output to one page. If the threat model produces a document nobody reads, it will produce exactly the false comfort that killed threat modeling the first time.
+
+The quarterly workshop produced documents nobody reads. Agent systems change too fast for that anyway. The teams that get this right treat threat modeling like code review: continuous, scoped, and triggered by change.
+
+Full framework: https://www.darinor.com/blog/threat-modeling-for-ai-agent-systems
+
+#ThreatModeling #AISecurity #AppSec
